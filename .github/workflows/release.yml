@@ -1,4 +1,4 @@
-name: Build
+name: Release
 on:
   workflow_dispatch:
     inputs:
@@ -100,12 +100,6 @@ jobs:
         if: ${{ matrix.jobs.test == 'test' }}
         run: |
           go test ./...
-
-      - name: Update CA
-        run: |
-          sudo apt-get install ca-certificates
-          sudo update-ca-certificates
-          cp -f /etc/ssl/certs/ca-certificates.crt component/ca/ca-certificates.crt
 
       - name: Build core
         env:
