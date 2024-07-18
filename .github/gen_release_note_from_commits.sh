@@ -13,7 +13,7 @@ while getopts "v:" opt; do
 done
 
 if [ -z "$version_range" ]; then
-  echo "Please provide the version range using -v option. Example: ./genReleashNote.sh -v v1.14.1...v1.14.2"
+  echo "Please provide the version range using -v option. Example: ./gen_release_note_from_commits.sh -v v1.14.1...v1.14.2"
   exit 1
 fi
 
