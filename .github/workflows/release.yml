@@ -163,8 +163,8 @@ jobs:
 
       - name: Generate release notes
         run: |
-          cp ./.github/genReleaseNote.sh ./
-          bash ./genReleaseNote.sh -v ${PREVERSION}...${CURRENTVERSION}
+          cp ./.github/gen_release_note_from_commits.sh ./
+          bash ./gen_release_note_from_commits.sh -v ${PREVERSION}...${CURRENTVERSION}
           rm ./genReleaseNote.sh
 
       - uses: actions/download-artifact@v4
