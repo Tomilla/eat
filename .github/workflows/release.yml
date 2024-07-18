@@ -7,7 +7,7 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
@@ -16,14 +16,14 @@ jobs:
     strategy:
       matrix:
         jobs:
-          - { goos: darwin, goarch: arm64, output: arm64 }
+          - { goos: darwin, goarch: arm64, output: arm64, test: test }
           - { goos: darwin, goarch: amd64, goamd64: v1, output: amd64-compatible }
-          - { goos: darwin, goarch: amd64, goamd64: v3, output: amd64 }
+          - { goos: darwin, goarch: amd64, goamd64: v3, output: amd64, test: test }
 
           - { goos: linux, goarch: '386', output: '386' }
-          - { goos: linux, goarch: amd64, goamd64: v1, output: amd64-compatible, test: test }
-          - { goos: linux, goarch: amd64, goamd64: v3, output: amd64 }
-          - { goos: linux, goarch: arm64, output: arm64 }
+          - { goos: linux, goarch: amd64, goamd64: v1, output: amd64-compatible }
+          - { goos: linux, goarch: amd64, goamd64: v3, output: amd64, test: test }
+          - { goos: linux, goarch: arm64, output: arm64, test: test }
           - { goos: linux, goarch: arm, goarm: '5', output: armv5 }
           - { goos: linux, goarch: arm, goarm: '6', output: armv6 }
           - { goos: linux, goarch: arm, goarm: '7', output: armv7 }
@@ -40,9 +40,9 @@ jobs:
 
           - { goos: windows, goarch: '386', output: '386' }
           - { goos: windows, goarch: amd64, goamd64: v1, output: amd64-compatible }
-          - { goos: windows, goarch: amd64, goamd64: v3, output: amd64 }
+          - { goos: windows, goarch: amd64, goamd64: v3, output: amd64, test: test }
           - { goos: windows, goarch: arm, goarm: '7', output: armv7 }
-          - { goos: windows, goarch: arm64, output: arm64 }
+          - { goos: windows, goarch: arm64, output: arm64, test: test }
 
           - { goos: freebsd, goarch: '386', output: '386' }
           - { goos: freebsd, goarch: amd64, goamd64: v1, output: amd64-compatible }
@@ -53,55 +53,65 @@ jobs:
           - { goos: android, goarch: amd64, ndk: x86_64-linux-android34, output: amd64 }
           - { goos: android, goarch: arm, ndk: armv7a-linux-androideabi34, output: armv7 }
           - { goos: android, goarch: arm64, ndk: aarch64-linux-android34, output: arm64-v8 }
+
     steps:
-      - uses: actions/checkout@v4
+      -
+        uses: actions/checkout@v4
         with:
           ref: master
 
-      - name: Set up Go
+      -
+        name: Set up Go
         if: ${{ matrix.jobs.goversion == '' }}
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
 
-      - name: Set up Go (custom)
+      -
+        name: Set up Go (custom)
         if: ${{ matrix.jobs.goversion != ''}}
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.jobs.goversion }}
 
-      - name: Set variables
+      -
+        name: Set variables
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version != '' }}
         run: echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
         shell: bash
 
-      - name: Set RunTime Variable
+      -
+        name: Set Runtime Variable
         run: |
-          echo "BUILDTIME=$(date -Iseconds --utc)" >> $GITHUB_ENV
+          echo "BUILDTIME=$(date)" >> $GITHUB_ENV
           echo "CGO_ENABLED=0" >> $GITHUB_ENV
           echo "BUILDHASH=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "BUILDTAG=-extldflags --static" >> $GITHUB_ENV
 
-      - name: Setup NDK
+      -
+        name: Setup NDK
         if: ${{ matrix.jobs.goos == 'android' }}
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
           ndk-version: r26c
 
-      - name: Set NDK path
+      -
+        name: Set NDK path
         if: ${{ matrix.jobs.goos == 'android' }}
         run: |
           echo "CC=${{steps.setup-ndk.outputs.ndk-path}}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{matrix.jobs.ndk}}-clang" >> $GITHUB_ENV
           echo "CGO_ENABLED=1" >> $GITHUB_ENV
           echo "BUILDTAG=" >> $GITHUB_ENV
 
-      - name: Test
+      -
+        name: Test
         if: ${{ matrix.jobs.test == 'test' }}
         run: |
           go test ./...
 
-      - name: Build core
+      -
+        name: Build core
         env:
           GOOS: ${{matrix.jobs.goos}}
           GOARCH: ${{matrix.jobs.goarch}}
@@ -121,15 +131,17 @@ jobs:
             rm eat-${{matrix.jobs.goos}}-${{matrix.jobs.output}}
           fi
 
-      - name: Save version
+      -
+        name: Save version
         run: |
           echo ${VERSION} > version.txt
         shell: bash
 
-      - name: Archive production artifacts
+      -
+        name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.jobs.goos }}-${{ matrix.jobs.output }}
+          name: "${{ matrix.jobs.goos }}-${{ matrix.jobs.output }}"
           path: |
             eat*.gz
             eat*.zip
@@ -138,45 +150,52 @@ jobs:
   Upload-Release:
     permissions: write-all
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version != '' }}
-    needs: [build]
+    needs: [ build ]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      -
+        name: Checkout
         uses: actions/checkout@v4
         with:
           ref: master
           fetch-depth: '0'
           fetch-tags: 'true'
 
-      - name: Get tags
+      -
+        name: Get tags
         run: |
           echo "CURRENTVERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
           git fetch --tags
           echo "PREVERSION=$(git describe --tags --abbrev=0 HEAD)" >> $GITHUB_ENV
 
-      - name: Tag the commit
+      -
+        name: Tag the commit
         run: |
           git tag ${{ github.event.inputs.version }}
           git push origin ${{ github.event.inputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate release notes
+      -
+        name: Generate release notes
         run: |
           cp ./.github/gen_release_note_from_commits.sh ./
           bash ./gen_release_note_from_commits.sh -v ${PREVERSION}...${CURRENTVERSION}
           rm ./gen_release_note_from_commits.sh
 
-      - uses: actions/download-artifact@v4
+      -
+        uses: actions/download-artifact@v4
         with:
           path: dist/
           merge-multiple: true
 
-      - name: Display structure of downloaded files
+      -
+        name: Display structure of downloaded files
         run: ls -R
         working-directory: dist/
 
-      - name: Upload Release
+      -
+        name: Upload Release
         uses: softprops/action-gh-release@v2
         if: ${{ success() }}
         with:
