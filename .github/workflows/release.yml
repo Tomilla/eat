@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: Alpha
+          ref: master
 
       - name: Set up Go
         if: ${{ matrix.jobs.goversion == '' }}
